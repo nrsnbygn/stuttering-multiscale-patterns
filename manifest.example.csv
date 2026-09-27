@@ -1,0 +1,4 @@
+audio_path,group_id,split,Prolongation,Block,SoundRep,WordRep,Interjection
+clips/example_001.wav,speaker_001,train,0,1,0,0,0
+clips/example_002.wav,speaker_002,dev,1,0,0,0,0
+clips/example_003.wav,speaker_003,test,0,0,1,0,0
