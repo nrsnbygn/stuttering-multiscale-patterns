@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+data/
+results/
+*.wav
+*.mp3
+*.flac
+*.joblib
+*.npz
