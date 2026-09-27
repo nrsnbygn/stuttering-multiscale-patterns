@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import scipy
 import sklearn
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.feature_selection import SelectKBest, VarianceThreshold, f_classif
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score, f1_score, precision_score, recall_score, roc_auc_score
@@ -89,9 +89,13 @@ def extract(path):
 def train_one(x, y, k):
     if len(np.unique(y)) < 2:
         return {"constant": float(y[0])}
-    actual_k = min(k, x.shape[1])
+    nonconstant = int(np.sum(np.nanvar(x, axis=0) > 1e-12))
+    if nonconstant == 0:
+        return {"constant": float(np.mean(y))}
+    actual_k = min(k, nonconstant)
     model = Pipeline([
         ("impute", SimpleImputer(strategy="median", keep_empty_features=True)),
+        ("variance", VarianceThreshold(threshold=1e-12)),
         ("scale", StandardScaler()),
         ("select", SelectKBest(f_classif, k=actual_k)),
         ("clf", LogisticRegression(max_iter=1000, class_weight="balanced", random_state=2026)),
@@ -169,6 +173,8 @@ def main():
                         paths=df.audio_path.to_numpy(), split=df.split.to_numpy())
     matrices = {"stats": stats, "pattern": pattern, "combined": np.hstack((stats, pattern))}
     tr, dv, te = (np.flatnonzero(df.split.to_numpy() == s) for s in ("train", "dev", "test"))
+    if np.any(labels[dv].sum(axis=0) == 0):
+        raise ValueError("Each target label needs at least one positive dev clip to select by macro AP")
     comparisons = []
     for rep, x in matrices.items():
         for k in (64, 128, 256):
